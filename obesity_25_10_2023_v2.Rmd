@@ -1,0 +1,199 @@
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+df <- function(path, sheet, year){
+  setwd(dir = "/Users/davidelks/Dropbox/Personal/obesity")
+   
+  
+   # Read the Excel file
+  first <- read_excel(path, sheet) %>%
+     #select(-c(1, 2)) %>% I commented these out for mapping purpose
+     #filter(!is.na(`...3`)) %>%
+     select_if(~!all(is.na(.))) 
+     return(first)
+} 
+
+cols <- c("ONS code", "LA code", "region", "admissions_total", "admissions_count_men","admissions_count_women","adm_per_100_000_all","adm_per_male", "adm_per_female") 
+
+
+df_2014 <- df("obes-phys-acti-diet-eng-2014-tab.xls", year = 2014, sheet = "7.6")
+colnames(df_2014) <- cols
+
+df_2015 <- df("obes-phys-acti-diet-eng-2015-tab.xlsx", year = 2015, sheet = "7.7")
+df_2015 <- df_2015[,-1]
+colnames(df_2015) <- cols
+
+df_2016 <- df("obes-phys-acti-diet-eng-2016-tab.xlsx", year = 2016, sheet = "Table 7")
+df_2016 <- df_2016[,-1]
+colnames(df_2016) <- cols
+
+df_2017 <- df("obes-phys-acti-diet-eng-2017-tab.xlsx", year = 2017, sheet = "Table 7")
+df_2017 <- df_2017[,-1]
+colnames(df_2017) <- cols
+
+df_2018 <- df("obes-phys-acti-diet-eng-2018-tab.xlsx", year = 2018, sheet = "Table 7")
+colnames(df_2018) <- cols
+
+df_2019 <- df("Obes-phys-acti-diet-eng-tab-2019.xlsx", year = 2019, sheet = "Table 2.4")
+colnames(df_2019) <- cols
+
+#Now the rest of the transform
+df_2015<- df_2015 %>% 
+     filter(admissions_total != "Admissions") %>%
+     mutate(across('region', str_replace," PCT", "")) %>%
+     mutate(across('region', str_replace," Borough Council (Unitary)", "")) %>%
+   	 mutate(across('region', str_replace," Metropolitan Borough Council", "")) %>%
+   	 mutate(across('region', str_replace,"  County Council", "")) %>%
+   	 mutate(across('region', str_replace,"  Council (Unitary)", "")) %>%
+   	 mutate(across('region', str_replace,"  City Council", "")) %>%
+   	 mutate(across('region', str_replace,"  Borough Council", "")) %>%
+   	 mutate(across('region', str_replace," Council", "")) %>%
+   	 mutate(across('region', str_replace," (Unitary)", "")) %>%
+   	 mutate(across('region', str_replace," Borough", "")) %>%
+   	 mutate(across('region', str_replace," Care Trust", "")) %>%
+   	 mutate(across('region', str_replace," Plus", "")) %>%
+   	 mutate(across('region', str_replace," County", "")) %>%
+   	 mutate(across('region', str_replace," City", "")) %>%
+   	 mutate(across('region', str_replace," Metropolitan District", "")) %>%
+   	 mutate(across('region', str_replace,", Of", "")) %>%
+   	 mutate(across('region', str_replace," Teaching", "")) %>%
+   	 mutate(across('region', str_replace,"Kensington & Chelsea", "Kensington And Chelsea")) %>%
+   	 mutate(across('region', str_replace,"Leicestershire & Rutland", "Leicestershire")) %>%
+   	 mutate(across('region', str_replace,"Newcastle upon Tyne", "Newcastle-upon-Tyne")) %>%
+   	 mutate(across('region', str_replace,"Stoke on Trent", "Stoke-on-Trent"   )) %>%
+   	 mutate(across('region', str_replace,"Redcar &Cleveland", "Redcar and Cleveland")) %>%
+   	 mutate(across('region', str_replace,"Richmond & Twickenham", "Richmond upon Thames")) %>%
+   	 mutate(across('region', str_replace,"Tameside & Glossop", "Tameside")) %>%
+   	 mutate(across('region', str_replace,"Telford & Wrekin", "Telford And Wrekin")) %>%
+   	 mutate(across('region', str_replace,"Sutton & Merton", "Sutton")) %>%
+   	 mutate(across('region', str_replace,"Barking & Dagenham", "Barking And Dagenham"    )) %>%
+   	 mutate(across('region', str_replace,"Bath & North East Somerset", "Bath And North East Somerset" )) %>%
+   	 mutate(across('region', str_replace,"Brighton & Hove", "Brighton And Hove"    )) %>%
+   	 mutate(across('region', str_replace,"London Of ", "")) %>%
+   	 mutate(across('region', str_replace,"Hammersmith & Fulham", "Hammersmith And Fulham")) %>%
+   	 mutate(across('region', str_replace,"Hammersmith & Fulham", "Hammersmith And Fulham")) %>%
+   	 mutate(across('region', str_replace,"Redcar & Cleveland", "Redcar And Cleveland")) %>%
+   	 mutate(across('region', str_replace,"Newcastle Upon Tyne", "Newcastle-upon-Tyne")) %>%
+   	 mutate(across('region', str_replace,"Stoke On Trent", "Stoke-on-Trent")) %>%
+   	 mutate(across('region', str_replace,"The Of The Isles of Scilly", "Isles Of Scilly")) 
+
+
+View(df_2015)
+
+
+```
+```{r}
+# let's clean and review
+df_2018 <- df_2018 %>% mutate(yr = "2018")
+df_2015
+```
+
+
+```{r}
+
+combined <- bind_rows(df_2014, df_2015, df_2016, df_2017, df_2018, df_2019)
+combined
+
+
+```
+
+```{r}
+View(combined)
+```
+
+
+```{r}
+
+cmb <- combined
+#slice off ONS code as they are not provided in dataset, for some reason.
+
+cmb <- cmb %>% 
+  select(-"ONS code") %>% 
+  mutate(yr = as.integer(cmb$yr)) %>% 
+  filter(yr >= 2015)
+
+# Filter out rows with complete cases
+complete_rows <- complete.cases(cmb)
+df_filtered <- cmb[complete_rows, ]
+
+# View the filtered dataframe
+View(df_filtered)
+
+```
+
+```{r}
+###Yet more cleaning
+install.packages("stringr")
+library(stringr)
+duplicates <- duplicated(df_filtered)
+unique_df <- subset(df_filtered, !duplicates)
+df <- unique_df %>% 
+  
+  mutate(across('region', str_replace,"London Borough of", "")) %>%
+  mutate(across('region', str_replace,"Corporation of the ", "")) %>%
+  mutate(across('region', str_replace,", of", "")) %>%
+  mutate(across('region', str_replace," City Council", "")) %>%
+  mutate(across('region', str_replace," Borough Council", "")) %>%
+  mutate(across('region', str_replace," County Council", "")) %>%
+  mutate(across('region', str_replace," Council", "")) %>%
+  mutate(across('region', str_replace,"London Borough of", "")) %>%
+  mutate(across('region', str_replace,"Royal Borough of", "")) %>%
+  mutate(across('region', str_replace," PCT", "")) %>%
+  mutate(across('region', str_replace," Care Trust", "")) %>%
+  mutate(across('region', str_replace," Teaching", "")) %>%
+  mutate(across('region', str_replace," Teaching Care Trust Plus","")) %>%
+  mutate(across('region', str_replace," Plus","")) %>%
+mutate(across('region', str_replace,"Stoke on Trent","Stoke-on-Trent")) %>%
+  mutate(across('region', str_replace,"Heart of","")) %>%
+  mutate(across('region', str_replace," County","")) %>%
+  mutate(across('region', str_replace," City","")) %>%
+   mutate(across('region', str_replace," City of","")) %>%
+  mutate(across('region', str_replace,"Metropolitan District","")) %>%
+   mutate(across('region', str_replace,"\\bMetropolitan\\b","")) %>%
+   mutate(across('region', str_replace," Metropolitian","")) %>%
+  mutate(across('region', str_replace,"(Unitary)", "")) %>%
+  mutate(across('region', str_replace,"()", "")) %>%
+  mutate(across('region', str_replace," ()", "")) %>%
+  mutate(across('region', str_replace,"Royal Borough of", "")) %>%
+  mutate(region = str_replace(region, "(?<=[a-z])(?=[A-Z])", " ")) %>% 
+  mutate(region = str_replace(region, "(?<=[a-zA-Z])&", " &")) %>% 
+  mutate(region = str_replace(region, "(\\w+),(\\w+)", "\\1, \\2")) %>% 
+  mutate(across('region', str_replace,"On-","on-")) %>%
+  mutate(across('region', str_replace,"Yorkshireand the Humber","Yorkshire and the Humber")) %>%
+  mutate(across('region', str_replace,"Bathand","Bath and")) %>%
+  mutate(across('region', str_replace,"Boroughof ","")) %>%
+  mutate(across('region', str_replace,"Theof the Isles of Scilly","Isles of Scilly")) %>%
+  mutate(across('region', str_replace," District","")) %>%
+  
+  mutate(across('region', str_replace,"Blackburnwith","Blackburn with")) %>%
+  mutate(across('region', str_replace,"Telfordand","Telford and")) %>%
+  mutate(across('region', str_replace,"Eastof","East of")) %>%
+  mutate(across('region', str_replace,"Isleof","Isle of")) %>%
+  mutate(across('region', str_replace,"ENGLAND6","England")) %>%
+  
+  mutate(across('region', str_replace,"\\([^)]*\\)","")) %>%
+  mutate(region = str_trim(region))
+
+
+
+View(df)
+         
+setwd(dir = "/Users/davidelks/Dropbox/Personal/obesity")         
+write.csv(df, "obesity_df_25_10_2023_v1.csv", row.names 
+= FALSE)   
+            
+  
+
+```
+
+Made a mistake with the data

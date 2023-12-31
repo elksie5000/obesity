@@ -1,0 +1,17 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("readxl")
+library(readxl)
+df <- read_csv("../davidelks/Dropbox/Personal/obesity/~$obes-phys-acti-diet-eng-2015-tab.xlsx", sheet="7.6")
+df
+```
+```{r}
+df <- read_csv("../davidelks/Dropbox/Personal/obesity/~$obes-phys-acti-diet-eng-2015-tab.xlsx", sheet="7.6")
+df
+```
+
